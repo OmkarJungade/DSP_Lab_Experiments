@@ -1,0 +1,161 @@
+alpha=1+mod(269,3);
+
+Problem 1
+%Set the reference parameters
+duration=2;
+frequency=15*alpha;
+sampleRate=120;
+
+%Generate the signal
+time=0:1/sampleRate:duration-1/sampleRate;
+signal = sin(2*pi*frequency*time);
+
+%Generate the DFT of 120 samples of the signal
+N1=120;
+signal_dft=fft(signal(1:N1));
+mag_1=abs(signal_dft);
+norm_1=(mag_1-min(mag_1))/(max(mag_1)-min(mag_1));
+
+%Plot the DFT
+graph_frequency_1=(0:length(mag_1)-1)/N1;
+plot(graph_frequency_1, norm_1, "LineWidth", 1.1);
+grid on;
+title("DFT Magnitude for 120 & 130 samples");
+xlabel("Frequency (Hz)");
+ylabel("Magnitude");
+
+%Generate and plot DFT for 130 samples
+hold on;
+N2=130;
+signal_dft_2=fft(signal(1:N2));
+mag_2=abs(signal_dft_2);
+norm_2=(mag_2-min(mag_2))/(max(mag_2)-min(mag_2));
+graph_frequency_2=(0:length(mag_2)-1)/N2;
+plot(graph_frequency_2, norm_2, 'r', LineWidth=1);
+hold off;
+legend('120 samps',"130 samps");
+
+%Find another N3 such that 120-DFT matches with N3-DFT
+N3=240;
+mag_3=abs(fft(signal(1:N3)));
+norm_3=mag_3/N3;
+graph_frequency_3=(0:length(mag_3)-1)/N3;
+plot(graph_frequency_3, norm_3, "LineWidth",1.1)
+grid on;
+title("Magnitude for 240 samples/sec");
+xlabel("Frequency(Normalized)");
+ylabel("Magnitude")
+
+Problem 2
+% Define the parameters
+A = 160;
+B = 166;
+duration = 10;
+sampling_rate=200;
+sampling_cases=[215, 415, 1115, 1515, 1915];
+
+%Generate signal
+t1=0:1/sampling_rate:duration-1/sampling_rate;
+x_t= 0.1*sin(A*pi*t1)+cos(B*pi*t1);
+plot(t1, x_t)
+grid on;
+title("Original Signal");
+xlabel("Time (s)");
+ylabel("x(t)");
+
+for j=1:length(sampling_cases)
+    %Generate DFT for different cases
+    signal_dft=fft(x_t(1:sampling_cases(j)));
+    dft_mag=abs(signal_dft)/sampling_cases(j);
+
+    %Plot the DFT graph
+    freq=(0:sampling_cases(j)-1)/sampling_cases(j);
+    subplot(length(sampling_cases),1,i)
+    plot(freq, dft_mag);
+    grid on;
+    title(sprintf("%d samples/sec", sampling_cases(j)));
+    xlabel("Frequency (Hz)");
+    ylabel("Magnitude");
+end
+
+
+Problem 3
+sampling_cases=[215, 415, 1115, 1515, 1915];
+for i=1:length(sampling_cases)
+    L=sampling_cases(i);
+    %Generate blackmann window
+    blackman_window=blackman(L);
+
+    %Create windowed signal for new DFT
+    windowed_signal=x_t(1:L).*(blackman_window)';
+    windowed_dft=fft(windowed_signal);
+    abs_windowed=abs(windowed_dft)/L;
+
+    %Plot the original signal
+    windowed_freq=(0:L-1)/L;
+    figure;
+    plot(freq, dft_mag, "LineStyle","--");
+    grid on;
+    xlabel("Frequency (Hz)");
+    ylabel("Magnitude");
+
+    %Plot the DFT signal on the same graph
+    hold on;
+    plot(windowed_freq, abs_windowed, "r");
+    title(sprintf("DFT of Blackman: %d samples/sec", L));
+    xlabel("Frequency (Hz)");
+    ylabel("Magnitude");
+    hold off;
+end
+
+Problem 4
+%Load data from file
+data=load("Exp4Data3.txt");
+N=length(data);
+
+%Create hamming windowed signal
+hamming_window=hamming(N);
+windowed_signal=data.*(hamming_window)';
+
+%Add the extra 10,000 samples and normalize
+hamming_fft=fft(windowed_signal, 1e4);
+
+%Create frequency axis and normalize
+freq_hamming=(0:(length(hamming_fft)-1))/1e4;
+
+%Plot the DFT magnitude
+figure;
+subplot(2,1,1);
+plot(freq_hamming, abs(hamming_fft)/1e4);
+grid on;
+title("DFT Magnitude with Hamming");
+xlabel("Frequency (Hz)");
+ylabel("Magnitude");
+
+%Find the peak frequencies from both components
+[max_amp_hamming, idx_max_hamming] = findpeaks(abs(hamming_fft)/1e4, "SortStr","descend");
+peak_freq_hamming = freq_hamming(idx_max_hamming);
+
+%Repeat the same for rectangular window
+rectangular_window=rectwin(N);
+rectangular_signal=data.*(rectangular_window)';
+
+rectangular_fft=fft(rectangular_signal,1e4);
+
+freq_rectangular=(0:length(rectangular_fft)-1)/1e4;
+
+subplot(2,1,2);
+plot(freq_rectangular, abs(rectangular_fft)/1e4);
+grid on;
+title("DFT Magnitude with Rectangular Window");
+xlabel("Frequency (Hz)");
+ylabel("Magnitude");
+
+[amp_rectangular, id_max_rectangular]=findpeaks(abs(rectangular_fft)/1e4, SortStr="descend");
+peak_freq_rectangular=freq_rectangular(id_max_rectangular);
+
+fprintf("Frequency 1 for Hamming: (%.3f)*Fs Hz\n", peak_freq_hamming(1));
+fprintf("Frequency 2 for Hamming: (%.3f)*Fs Hz\n", peak_freq_hamming(2));
+
+fprintf("Frequency 1 for Rectangular: (%.3f)*Fs Hz\n", peak_freq_rectangular(1));
+fprintf("Frequency 2 for Rectangular: (%.3f)*Fs Hz\n", peak_freq_rectangular(2));
